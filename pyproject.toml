@@ -1,0 +1,25 @@
+[project]
+name = "finclose-ai"
+version = "0.1.0"
+description = "Automated financial close and variance analysis pipeline with AI-generated executive commentary"
+authors = [
+    {name = "Carlos Leguizamon Guillaumet",email = "carlosleguizamonguillaumet1998@gmail.com"}
+]
+license = "MIT"
+readme = "README.md"
+requires-python = "^3.10"
+dependencies = [
+    "faker (>=40.19.1,<41.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.3,<10.0.0)",
+    "black (>=26.5.1,<27.0.0)",
+    "ruff (>=0.15.14,<0.16.0)"
+]
