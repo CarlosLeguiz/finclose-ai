@@ -63,6 +63,13 @@ See `docs/architecture.md` for the detailed diagram (added in Week 2).
 | **Environment** | WSL2 / Ubuntu 22.04 |
 
 ---
+## Data Model
+
+The pipeline operates on a dimensional data model with 7 tables (4 dimensions + 3 facts) designed to represent the accounting reality of a mid-size manufacturing company.
+
+![Data Model](./docs/data_model.png)
+
+See [`docs/data_model.md`](./docs/data_model.md) for full details, including column definitions, business rules, and design rationale.
 
 ## Project Roadmap (16 weeks)
 

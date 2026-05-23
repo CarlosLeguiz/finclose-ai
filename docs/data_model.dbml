@@ -1,0 +1,117 @@
+// FinClose AI - Data Model
+// Designed by: Carlos Leguizamon Guillaumet
+// Date: May 2026
+// Purpose: Automated financial close with AI-generated variance analysis
+
+// ============================================
+// DIMENSION TABLES
+// ============================================
+
+Table dim_accounts {
+  account_id varchar(20) [pk, note: 'Surrogate key (immutable)']
+  account_code varchar(20) [unique, not null, note: 'Business code (mutable)']
+  account_name varchar(200) [not null]
+  account_type varchar(20) [not null, note: 'Asset/Liability/Equity/Revenue/Expense']
+  parent_account_id varchar(20) [ref: > dim_accounts.account_id, note: 'Self-reference for hierarchy']
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+
+  Note: 'Chart of accounts. Self-referencing hierarchy. ~80-120 rows for Acme Manufacturing.'
+}
+
+Table dim_cost_centers {
+  cost_center_id varchar(20) [pk]
+  code varchar(20) [unique, not null]
+  name varchar(200) [not null]
+  department varchar(100) [not null, note: 'Grouping: Operations, Marketing, Sales, G&A']
+  manager_name varchar(200)
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+
+  Note: 'Cost centers / departments. Used for spend analysis. ~10-15 rows.'
+}
+
+Table dim_periods {
+  period_id varchar(20) [pk, note: 'Semantic key like 2026-01']
+  year integer [not null]
+  month integer [not null]
+  period_name varchar(50) [not null]
+  quarter integer [not null]
+  start_date date [not null]
+  end_date date [not null]
+  is_closed boolean [not null, default: false]
+  closed_at timestamp
+
+  Note: 'Monthly accounting periods. ~36 rows (3 years).'
+}
+
+Table dim_exchange_rates {
+  rate_id varchar(20) [pk]
+  from_currency varchar(3) [not null, note: 'ISO 4217 code']
+  to_currency varchar(3) [not null, note: 'ISO 4217 code']
+  rate_date date [not null]
+  rate decimal(18,6) [not null]
+  source varchar(50) [not null, default: 'BCRA']
+  created_at timestamp [not null]
+
+  Indexes {
+    (from_currency, to_currency, rate_date) [unique]
+  }
+
+  Note: 'Currency conversion rates. Lookup table, no direct FK to facts. ~108 rows.'
+}
+
+// ============================================
+// FACT TABLES
+// ============================================
+
+Table fact_journal_entries {
+  je_id varchar(20) [pk]
+  period_id varchar(20) [ref: > dim_periods.period_id, not null]
+  entry_date date [not null, note: 'Real document date']
+  description varchar(500) [not null]
+  source_system varchar(50) [not null, note: 'ERP/Manual/Adjustment/Reversal']
+  created_by varchar(100) [not null]
+  status varchar(20) [not null, note: 'Draft/Posted/Reversed']
+  created_at timestamp [not null]
+  posted_at timestamp
+
+  Note: 'Journal entry header. ~3000-5000 entries over 36 months.'
+}
+
+Table fact_journal_lines {
+  je_line_id varchar(20) [pk]
+  je_id varchar(20) [ref: > fact_journal_entries.je_id, not null]
+  line_number integer [not null]
+  account_id varchar(20) [ref: > dim_accounts.account_id, not null]
+  cost_center_id varchar(20) [ref: > dim_cost_centers.cost_center_id, note: 'Null for Assets/Liabilities/Equity']
+  debit_amount decimal(18,2) [not null, default: 0]
+  credit_amount decimal(18,2) [not null, default: 0]
+  currency varchar(3) [not null]
+  description varchar(500)
+  created_at timestamp [not null]
+
+  Indexes {
+    (je_id, line_number)
+  }
+
+  Note: 'Journal entry detail. Core fact table. Sum(debit) = Sum(credit) per je_id. ~15000-25000 rows.'
+}
+
+Table fact_budgets {
+  budget_id varchar(20) [pk]
+  account_id varchar(20) [ref: > dim_accounts.account_id, not null]
+  cost_center_id varchar(20) [ref: > dim_cost_centers.cost_center_id, not null]
+  period_id varchar(20) [ref: > dim_periods.period_id, not null]
+  budgeted_amount decimal(18,2) [not null]
+  currency varchar(3) [not null, default: 'ARS']
+  budget_version varchar(20) [not null, default: 'v1']
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+
+  Indexes {
+    (account_id, cost_center_id, period_id, budget_version) [unique]
+  }
+
+  Note: 'Budgeted amounts by account + cost_center + period. Versioned. ~5400 rows.'
+}
