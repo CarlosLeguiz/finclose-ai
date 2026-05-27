@@ -6,8 +6,11 @@ Run with:
 
 from pathlib import Path
 
-from data_generator.schemas import Account, CostCenter
-from data_generator.dimensions import generate_accounts, generate_cost_centers
+from data_generator.dimensions import (
+    generate_accounts,
+    generate_cost_centers,
+    generate_periods,
+)
 from data_generator.persistence import save_to_csv
 
 
@@ -22,6 +25,10 @@ def main() -> None:
     # Dimension: cost centers
     cost_centers = generate_cost_centers()
     save_to_csv(cost_centers, output_dir / "dim_cost_centers.csv")
+
+    # Dimension: periods
+    periods = generate_periods()
+    save_to_csv(periods, output_dir / "dim_periods.csv")
 
 
 if __name__ == "__main__": ##If this file is running directly, call main(). If it's being imported from another file, do nothing.

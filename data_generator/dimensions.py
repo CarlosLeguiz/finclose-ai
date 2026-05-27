@@ -2,8 +2,9 @@
 Generators for the 4 dimension tables (accounts, cost centers, periods, exchange rates).
 """
 
-from datetime import datetime
+from datetime import datetime, date
 from faker import Faker
+from calendar import monthrange
 
 from data_generator.config import (
     NUM_ACCOUNTS,
@@ -12,8 +13,10 @@ from data_generator.config import (
     ACCOUNT_TYPE_RANGES,
     ACCOUNT_DISTRIBUTION,
     COST_CENTERS,
+    START_YEAR,
+    END_YEAR,
 )
-from data_generator.schemas import Account, CostCenter
+from data_generator.schemas import Account, CostCenter, Period
 
 
 def generate_accounts(num_accounts: int = NUM_ACCOUNTS) -> list[Account]:
@@ -74,3 +77,45 @@ def generate_cost_centers() -> list[CostCenter]:
         cost_centers.append(cost_center)
 
     return cost_centers
+
+def generate_periods() -> list[Period]:
+    """Generate accounting period dimension records.
+
+    Creates one Period per month between START_YEAR and END_YEAR.
+    Periods before today are marked as closed.
+
+    Returns:
+        List of Period instances ready to be loaded into dim_periods.
+    """
+    periods = []
+    today = date.today()
+
+    for year in range(START_YEAR, END_YEAR + 1):
+        for month in range(1, 13):
+            # Calculate last day of the month
+            _, last_day = monthrange(year, month)
+
+            start_date = date(year, month, 1)
+            end_date = date(year, month, last_day)
+
+            # A period is "closed" if its end_date is in the past
+            is_closed = end_date < today
+            closed_at = datetime.now() if is_closed else None
+
+            # Month name in English (January, February, etc.)
+            month_name = start_date.strftime("%B")
+
+            period = Period(
+                period_id=f"{year}-{month:02d}",
+                year=year,
+                month=month,
+                period_name=f"{month_name} {year}",
+                quarter=(month - 1) // 3 + 1,
+                start_date=start_date,
+                end_date=end_date,
+                is_closed=is_closed,
+                closed_at=closed_at,
+            )
+            periods.append(period)
+
+    return periods
