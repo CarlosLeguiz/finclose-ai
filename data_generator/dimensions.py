@@ -3,7 +3,6 @@ Generators for the 4 dimension tables (accounts, cost centers, periods, exchange
 """
 
 from datetime import datetime
-from typing import List
 from faker import Faker
 
 from data_generator.config import (
@@ -12,10 +11,12 @@ from data_generator.config import (
     RANDOM_SEED,
     ACCOUNT_TYPE_RANGES,
     ACCOUNT_DISTRIBUTION,
+    COST_CENTERS,
 )
-from data_generator.schemas import Account
+from data_generator.schemas import Account, CostCenter
 
-def generate_accounts(num_accounts: int = NUM_ACCOUNTS) -> List[Account]:
+
+def generate_accounts(num_accounts: int = NUM_ACCOUNTS) -> list[Account]:
     """
     Generate a list of synthetic Account instances for the dim_accounts table.
     
@@ -51,3 +52,25 @@ def generate_accounts(num_accounts: int = NUM_ACCOUNTS) -> List[Account]:
             account_counter += 1
         
     return accounts
+
+def generate_cost_centers() -> list[CostCenter]:
+    """Generate cost center dimension records.
+
+    Returns:
+        List of CostCenter instances based on the COST_CENTERS config.
+    """
+    cost_centers = []
+
+    for i, (code, name, department, manager_name) in enumerate(COST_CENTERS):
+        cost_center = CostCenter(
+            cost_center_id=f"CC{i:03d}",
+            code=code,
+            name=name,
+            department=department,
+            manager_name=manager_name,
+            is_active=True,
+            created_at=datetime.now(),
+        )
+        cost_centers.append(cost_center)
+
+    return cost_centers

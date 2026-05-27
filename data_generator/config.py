@@ -45,3 +45,21 @@ ACCOUNT_DISTRIBUTION = {
     "Revenue":   15,
     "Expense":   35,
 }
+
+# ======= COST CENTERS  =======
+
+COST_CENTERS = [ ## hardcoded for more realistic naming  
+    # (code, name, department, manager_name)
+    ("100", "Executive Office", "G&A", "Carlos Mendoza"),
+    ("110", "Finance & Accounting", "G&A", "Laura Pereyra"),
+    ("120", "Human Resources", "G&A", "Diego Romero"),
+    ("130", "IT & Systems", "G&A", "Sofía Castro"),
+    ("200", "Sales - Domestic", "Sales", "Martín Álvarez"),
+    ("210", "Sales - Export", "Sales", "Andrea López"),
+    ("300", "Marketing Digital", "Marketing", "Lucía Fernández"),
+    ("310", "Marketing Traditional", "Marketing", None),
+    ("400", "Production - Córdoba Plant", "Operations", "Roberto Silva"),
+    ("410", "Production - Buenos Aires Plant", "Operations", "Mariana Torres"),
+    ("420", "Logistics & Warehouse", "Operations", "Federico Ruiz"),
+    ("430", "Quality Control", "Operations", None),
+]

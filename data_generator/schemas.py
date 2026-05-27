@@ -22,3 +22,13 @@ class Account:
     parent_account_id: Optional[str]
     is_active: bool
     created_at: datetime
+
+@dataclass
+class CostCenter:
+    cost_center_id: str
+    code: str
+    name: str
+    department: str
+    manager_name: str | None
+    is_active: bool
+    created_at: datetime
