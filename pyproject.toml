@@ -9,7 +9,9 @@ license = "MIT"
 readme = "README.md"
 requires-python = "^3.10"
 dependencies = [
-    "faker (>=40.19.1,<41.0.0)"
+    "faker (>=40.19.1,<41.0.0)",
+    # pandas pinned to v2.x — see docs/decisions/0001-pin-pandas-to-v2.md
+    "pandas (>=2.2.0,<3.0.0)"
 ]
 
 

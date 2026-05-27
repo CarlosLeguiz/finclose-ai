@@ -27,3 +27,21 @@ AVG_LINES_PER_ENTRY = 4
 
 FAKER_LOCALE = "es_AR"
 RANDOM_SEED = 42
+
+# =======  ACCOUNT TYPE RANGES =======
+
+ACCOUNT_TYPE_RANGES = { 
+    "Asset":     (1000, 1999),
+    "Liability": (2000, 2999),
+    "Equity":    (3000, 3999),
+    "Revenue":   (4000, 4999),
+    "Expense":   (5000, 5999),
+}
+
+ACCOUNT_DISTRIBUTION = { 
+    "Asset":     15,
+    "Liability": 10,
+    "Equity":     5,
+    "Revenue":   15,
+    "Expense":   35,
+}
