@@ -9,21 +9,18 @@ from pathlib import Path
 
 import pandas as pd
 
-from data_generator.schemas import Account
-
-
-def save_accounts_to_csv(accounts: list[Account], output_path: Path) -> None:
-    """Save a list of Account instances to a CSV file.
+def save_to_csv(data: list, output_path: Path) -> None:
+    """Save a list of dataclass instances to a CSV file.
 
     Args:
-        accounts: List of Account dataclass instances.
+        data: List of dataclass instances (Account, CostCenter, Period, etc.).
         output_path: Destination path for the CSV file.
     """
-    # Convert each Account dataclass to a dictionary
-    accounts_as_dicts = [asdict(account) for account in accounts]
+    # Convert each dataclass instance to a dictionary
+    data_as_dicts = [asdict(item) for item in data]
 
     # Build the DataFrame from the list of dicts
-    df = pd.DataFrame(accounts_as_dicts)
+    df = pd.DataFrame(data_as_dicts)
 
     # Ensure the parent directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -31,4 +28,4 @@ def save_accounts_to_csv(accounts: list[Account], output_path: Path) -> None:
     # Write to CSV without the pandas index column
     df.to_csv(output_path, index=False)
 
-    print(f"Saved {len(accounts)} accounts to {output_path}")
+    print(f"Saved {len(data)} rows to {output_path}")
