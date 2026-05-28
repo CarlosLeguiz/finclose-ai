@@ -43,3 +43,14 @@ class Period:
     end_date: date        # último día del mes
     is_closed: bool       # True past periods, False future periods
     closed_at: datetime | None  # timestamp is close, None is open
+
+@dataclass
+class ExchangeRate:
+    """Represents a single exchange rate between two currencies on a specific date."""
+    rate_id: str
+    from_currency: str       # ISO 4217: "USD", "EUR", "ARS"
+    to_currency: str
+    rate_date: date
+    rate: float              # rate value (e.g., 920.50 means 1 USD = 920.50 ARS)
+    source: str              # e.g., "BCRA"
+    created_at: datetime

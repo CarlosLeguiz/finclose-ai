@@ -63,3 +63,34 @@ COST_CENTERS = [ ## hardcoded for more realistic naming
     ("420", "Logistics & Warehouse", "Operations", "Federico Ruiz"),
     ("430", "Quality Control", "Operations", None),
 ]
+
+
+# ======= EXCHANGE RATES =======
+
+# Currency pairs to generate rates for (from_currency, to_currency)
+CURRENCY_PAIRS = [
+    ("USD", "ARS"),
+    ("EUR", "ARS"),
+]
+
+# Historical anchor rates for USD/ARS (real BCRA data + projections)
+# Format: {(year, month): rate}
+USD_ARS_ANCHORS = {
+    (2024, 1): 820.0,
+    (2024, 6): 910.0,
+    (2024, 12): 1020.0,
+    (2025, 6): 1150.0,
+    (2025, 12): 1280.0,
+    (2026, 5): 1380.0,
+    (2026, 12): 1500.0,   # year-end projection
+}
+
+# EUR/ARS = USD/ARS * EUR/USD ratio (~1.08 average)
+#For multi-currency modeling, I anchored to USD/ARS (the primary reference for Argentine accounting) and derived EUR/ARS from the USD/EUR cross-rate. This is the standard approach in BCRA reporting.
+EUR_USD_RATIO = 1.08 
+
+# Source label for the rates
+EXCHANGE_RATE_SOURCE = "BCRA"
+
+# Volatility: monthly random variation around the interpolated rate
+RATE_MONTHLY_VOLATILITY = 0.02  # ±2% noise

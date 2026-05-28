@@ -15,8 +15,13 @@ from data_generator.config import (
     COST_CENTERS,
     START_YEAR,
     END_YEAR,
+    CURRENCY_PAIRS,
+    USD_ARS_ANCHORS,
+    EUR_USD_RATIO,
+    EXCHANGE_RATE_SOURCE,
+    RATE_MONTHLY_VOLATILITY
 )
-from data_generator.schemas import Account, CostCenter, Period
+from data_generator.schemas import Account, CostCenter, Period, ExchangeRate
 
 
 def generate_accounts(num_accounts: int = NUM_ACCOUNTS) -> list[Account]:
@@ -119,3 +124,110 @@ def generate_periods() -> list[Period]:
             periods.append(period)
 
     return periods
+
+def _find_anchors(year: int, month: int, anchors: dict) -> tuple:
+    """Find the two anchor points that surround a given (year, month).
+
+    Returns:
+        Tuple ((y1, m1, rate1), (y2, m2, rate2)) where the target is between them.
+    """
+    target_index = year * 12 + month  # convert (year, month) to a single number
+    sorted_anchors = sorted(anchors.items())  # sort by (year, month)
+
+    prev_anchor = sorted_anchors[0]
+    next_anchor = sorted_anchors[-1]
+
+    for (y, m), rate in sorted_anchors:
+        anchor_index = y * 12 + m
+        if anchor_index <= target_index:
+            prev_anchor = ((y, m), rate)
+        if anchor_index >= target_index and next_anchor == sorted_anchors[-1]:
+            next_anchor = ((y, m), rate)
+            break
+
+    return prev_anchor, next_anchor
+
+
+def _interpolate_rate(year: int, month: int, anchors: dict) -> float:
+    """Linear interpolation between the two nearest anchors.
+
+    Args:
+        year, month: target month to compute rate for
+        anchors: dict {(year, month): rate}
+
+    Returns:
+        Interpolated rate value.
+    """
+    prev_anchor, next_anchor = _find_anchors(year, month, anchors)
+    (y1, m1), rate1 = prev_anchor
+    (y2, m2), rate2 = next_anchor
+
+    # If exact anchor, return its value
+    if (y1, m1) == (y2, m2):
+        return rate1
+
+    # Linear interpolation formula
+    target_index = year * 12 + month
+    idx1 = y1 * 12 + m1
+    idx2 = y2 * 12 + m2
+
+    progress = (target_index - idx1) / (idx2 - idx1)
+    return rate1 + (rate2 - rate1) * progress
+
+def generate_exchange_rates() -> list[ExchangeRate]:
+    """Generate exchange rate dimension records.
+
+    Creates monthly rates for each currency pair defined in CURRENCY_PAIRS.
+    USD/ARS rates are interpolated from historical anchors with small
+    random volatility. EUR/ARS rates are derived from USD/ARS * EUR_USD_RATIO.
+
+    Returns:
+        List of ExchangeRate instances ready to be loaded into dim_exchange_rates.
+    """
+    import random
+    random.seed(RANDOM_SEED)
+
+    rates = []
+    rate_counter = 0
+
+    for year in range(START_YEAR, END_YEAR + 1):
+        for month in range(1, 13):
+            # Last day of the month is the reference rate_date
+            _, last_day = monthrange(year, month)
+            rate_date = date(year, month, last_day)
+
+            # Compute USD/ARS base rate with volatility
+            base_usd_ars = _interpolate_rate(year, month, USD_ARS_ANCHORS)
+            noise = random.uniform(-RATE_MONTHLY_VOLATILITY, RATE_MONTHLY_VOLATILITY)
+            usd_ars_rate = round(base_usd_ars * (1 + noise), 2)
+
+            # USD → ARS
+            rates.append(
+                ExchangeRate(
+                    rate_id=f"RATE{rate_counter:04d}",
+                    from_currency="USD",
+                    to_currency="ARS",
+                    rate_date=rate_date,
+                    rate=usd_ars_rate,
+                    source=EXCHANGE_RATE_SOURCE,
+                    created_at=datetime.now(),
+                )
+            )
+            rate_counter += 1
+
+            # EUR → ARS (derived from USD/ARS)
+            eur_ars_rate = round(usd_ars_rate * EUR_USD_RATIO, 2)
+            rates.append(
+                ExchangeRate(
+                    rate_id=f"RATE{rate_counter:04d}",
+                    from_currency="EUR",
+                    to_currency="ARS",
+                    rate_date=rate_date,
+                    rate=eur_ars_rate,
+                    source=EXCHANGE_RATE_SOURCE,
+                    created_at=datetime.now(),
+                )
+            )
+            rate_counter += 1
+
+    return rates
