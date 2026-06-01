@@ -71,3 +71,22 @@ class JournalEntry:
     status: str                      # Draft / Posted / Reversed
     created_at: datetime             # when the row was created
     posted_at: datetime | None       # when posted to ledger (None if not posted)
+
+@dataclass
+class JournalLine:
+    """Single line of a journal entry (debit or credit).
+
+    Each line belongs to exactly one JournalEntry (parent) and references
+    one Account. The parent entry's lines must satisfy double-entry rule:
+    SUM(debit_amount) == SUM(credit_amount).
+    """
+    je_line_id: str                    # "JEL0000001"
+    je_id: str                          # FK to fact_journal_entries
+    line_number: int                    # order within the entry (1, 2, ...)
+    account_id: str                     # FK to dim_accounts
+    cost_center_id: str | None          # FK to dim_cost_centers (NULL for Asset/Liability/Equity)
+    debit_amount: float                 # debit value (0.00 if this is a credit line)
+    credit_amount: float                # credit value (0.00 if this is a debit line)
+    currency: str                       # ISO 4217: "ARS", "USD"
+    description: str | None             # optional line-specific description
+    created_at: datetime

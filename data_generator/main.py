@@ -13,7 +13,7 @@ from data_generator.dimensions import (
     generate_exchange_rates,
 )
 
-from data_generator.facts import generate_journal_entries
+from data_generator.facts import generate_journal_entries, generate_journal_lines
 
 from data_generator.persistence import save_to_csv
 
@@ -41,6 +41,10 @@ def main() -> None:
     # Fact: journal entries (headers)
     journal_entries = generate_journal_entries(periods)
     save_to_csv(journal_entries, output_dir / "fact_journal_entries.csv")
+
+    # Fact: journal lines (with double-entry balance)
+    journal_lines = generate_journal_lines(journal_entries, accounts, cost_centers)
+    save_to_csv(journal_lines, output_dir / "fact_journal_lines.csv")
 
 
 if __name__ == "__main__": ##If this file is running directly, call main(). If it's being imported from another file, do nothing.

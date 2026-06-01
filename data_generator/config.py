@@ -144,3 +144,34 @@ USERS = [
     "automated_erp",
     "system_batch",
 ]
+
+# ======= JOURNAL LINES =======
+
+# Number of lines per journal entry (uniform random in this range)
+LINES_PER_ENTRY_MIN = 2
+LINES_PER_ENTRY_MAX = 5
+
+# Monetary amount range per debit line (ARS)
+LINE_AMOUNT_MIN = 1000
+LINE_AMOUNT_MAX = 500000
+
+# Currency distribution for journal lines
+CURRENCY_DISTRIBUTION = {
+    "ARS": 0.85,
+    "USD": 0.15,
+}
+
+# Account type weights for debit lines
+# (most debits are Expense, some Asset)
+DEBIT_ACCOUNT_TYPE_WEIGHTS = {
+    "Expense": 0.70,
+    "Asset":   0.30,
+}
+
+# Account type weights for credit lines (the balancing line)
+# (most credits go to Asset:Caja/Banco or Liability)
+CREDIT_ACCOUNT_TYPE_WEIGHTS = {
+    "Asset":     0.60,
+    "Liability": 0.30,
+    "Revenue":   0.10,
+}

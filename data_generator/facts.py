@@ -12,8 +12,15 @@ from data_generator.config import (
     SOURCE_SYSTEM_DISTRIBUTION,
     ENTRY_DESCRIPTIONS,
     USERS,
+    LINES_PER_ENTRY_MIN,
+    LINES_PER_ENTRY_MAX,
+    LINE_AMOUNT_MIN,
+    LINE_AMOUNT_MAX,
+    CURRENCY_DISTRIBUTION,
+    DEBIT_ACCOUNT_TYPE_WEIGHTS,
+    CREDIT_ACCOUNT_TYPE_WEIGHTS,
 )
-from data_generator.schemas import Period, JournalEntry
+from data_generator.schemas import Period, JournalEntry, JournalLine, Account, CostCenter
 
 
 def _weighted_choice(distribution: dict) -> str:
@@ -88,3 +95,106 @@ def generate_journal_entries(periods: list[Period]) -> list[JournalEntry]:
             je_counter += 1
 
     return entries
+
+def _pick_account_by_type(accounts: list, type_weights: dict) -> "Account":
+    """Pick a random account whose type matches the weighted distribution.
+
+    Args:
+        accounts: list of Account instances.
+        type_weights: dict mapping account_type → probability weight.
+
+    Returns:
+        One Account instance randomly chosen, respecting type weights.
+    """
+    # First pick the type (weighted)
+    chosen_type = _weighted_choice(type_weights)
+
+    # Then pick a random account of that type
+    candidates = [acc for acc in accounts if acc.account_type == chosen_type]
+    return random.choice(candidates)
+
+
+def generate_journal_lines(
+    journal_entries: list[JournalEntry],
+    accounts: list,
+    cost_centers: list,
+) -> list[JournalLine]:
+    """Generate journal line records for the given journal entries.
+
+    For each entry, creates 2-5 lines following double-entry bookkeeping:
+    the sum of debits equals the sum of credits. The last line is calculated
+    to cancel the running balance.
+
+    Args:
+        journal_entries: list of JournalEntry instances (parent entries).
+        accounts: list of Account instances (for FK lookups).
+        cost_centers: list of CostCenter instances (for cost center assignment).
+
+    Returns:
+        List of JournalLine instances ready to be loaded into fact_journal_lines.
+    """
+    random.seed(RANDOM_SEED)
+
+    lines = []
+    line_counter = 1
+
+    for entry in journal_entries:
+        # 1. Decide how many lines this entry will have
+        num_lines = random.randint(LINES_PER_ENTRY_MIN, LINES_PER_ENTRY_MAX)
+
+        # 2. Pick one currency for the whole entry (mixed currencies per entry is rare)
+        currency = _weighted_choice(CURRENCY_DISTRIBUTION)
+
+        # 3. Generate (N-1) debit lines, track total
+        total_debits = 0.0
+        for line_num in range(1, num_lines):
+            debit_account = _pick_account_by_type(accounts, DEBIT_ACCOUNT_TYPE_WEIGHTS)
+
+            # cost_center is required for Revenue/Expense, NULL otherwise
+            if debit_account.account_type in ("Revenue", "Expense"):
+                cost_center_id = random.choice(cost_centers).cost_center_id
+            else:
+                cost_center_id = None
+
+            amount = round(random.uniform(LINE_AMOUNT_MIN, LINE_AMOUNT_MAX), 2)
+
+            line = JournalLine(
+                je_line_id=f"JEL{line_counter:07d}",
+                je_id=entry.je_id,
+                line_number=line_num,
+                account_id=debit_account.account_id,
+                cost_center_id=cost_center_id,
+                debit_amount=amount,
+                credit_amount=0.0,
+                currency=currency,
+                description=None,
+                created_at=datetime.now(),
+            )
+            lines.append(line)
+            total_debits += amount
+            line_counter += 1
+
+        # 4. Final balancing credit line
+        credit_account = _pick_account_by_type(accounts, CREDIT_ACCOUNT_TYPE_WEIGHTS)
+
+        if credit_account.account_type in ("Revenue", "Expense"):
+            cost_center_id = random.choice(cost_centers).cost_center_id
+        else:
+            cost_center_id = None
+
+        credit_line = JournalLine(
+            je_line_id=f"JEL{line_counter:07d}",
+            je_id=entry.je_id,
+            line_number=num_lines,
+            account_id=credit_account.account_id,
+            cost_center_id=cost_center_id,
+            debit_amount=0.0,
+            credit_amount=round(total_debits, 2),
+            currency=currency,
+            description=None,
+            created_at=datetime.now(),
+        )
+        lines.append(credit_line)
+        line_counter += 1
+
+    return lines
