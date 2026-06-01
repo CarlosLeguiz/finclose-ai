@@ -12,6 +12,9 @@ from data_generator.dimensions import (
     generate_periods,
     generate_exchange_rates,
 )
+
+from data_generator.facts import generate_journal_entries
+
 from data_generator.persistence import save_to_csv
 
 
@@ -34,6 +37,10 @@ def main() -> None:
     # Dimension: exchange rates
     exchange_rates = generate_exchange_rates()
     save_to_csv(exchange_rates, output_dir / "dim_exchange_rates.csv")
+
+    # Fact: journal entries (headers)
+    journal_entries = generate_journal_entries(periods)
+    save_to_csv(journal_entries, output_dir / "fact_journal_entries.csv")
 
 
 if __name__ == "__main__": ##If this file is running directly, call main(). If it's being imported from another file, do nothing.

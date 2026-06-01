@@ -94,3 +94,53 @@ EXCHANGE_RATE_SOURCE = "BCRA"
 
 # Volatility: monthly random variation around the interpolated rate
 RATE_MONTHLY_VOLATILITY = 0.02  # ±2% noise
+
+# ======= JOURNAL ENTRIES =======
+
+# Distribution of entry statuses (must sum to 1.0)
+STATUS_DISTRIBUTION = {
+    "Posted":   0.95,
+    "Draft":    0.03,
+    "Reversed": 0.02,
+}
+
+# Distribution of source systems
+SOURCE_SYSTEM_DISTRIBUTION = {
+    "ERP":        0.80,
+    "Manual":     0.15,
+    "Adjustment": 0.05,
+}
+
+# Realistic description templates (Spanish)
+ENTRY_DESCRIPTIONS = [
+    "Pago a proveedores - {month_name}",
+    "Facturación de ventas - {month_name}",
+    "Cobranza de clientes - {month_name}",
+    "Pago de honorarios profesionales",
+    "Liquidación de sueldos - {month_name}",
+    "Pago de servicios públicos",
+    "Reclasificación contable",
+    "Ajuste de inventario",
+    "Provisión de gastos - {month_name}",
+    "Depreciación mensual de bienes de uso",
+    "Pago de impuestos - {month_name}",
+    "Compra de mercaderías",
+    "Reintegro de gastos",
+    "Devengamiento de intereses",
+    "Pago de alquiler - {month_name}",
+    "Compra de insumos",
+    "Pago de comisiones bancarias",
+    "Reembolso de gastos a empleados",
+    "Ajuste de cierre - {month_name}",
+    "Revaluación de tipo de cambio",
+]
+
+# Users that load entries into the system
+USERS = [
+    "ana.gomez",
+    "carlos.diaz",
+    "lucia.fernandez",
+    "diego.romero",
+    "automated_erp",
+    "system_batch",
+]

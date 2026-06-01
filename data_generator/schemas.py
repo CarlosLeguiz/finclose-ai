@@ -54,3 +54,20 @@ class ExchangeRate:
     rate: float              # rate value (e.g., 920.50 means 1 USD = 920.50 ARS)
     source: str              # e.g., "BCRA"
     created_at: datetime
+
+@dataclass
+class JournalEntry:
+    """Header of an accounting journal entry.
+
+    Each row represents a single economic event (payment, sale, adjustment).
+    Monetary amounts live in fact_journal_lines, not here.
+    """
+    je_id: str                       # "JE000001"
+    period_id: str                   # FK to dim_periods: "2024-03"
+    entry_date: date                 # actual document date
+    description: str                 # short business description
+    source_system: str               # ERP / Manual / Adjustment / Reversal
+    created_by: str                  # user who loaded the entry
+    status: str                      # Draft / Posted / Reversed
+    created_at: datetime             # when the row was created
+    posted_at: datetime | None       # when posted to ledger (None if not posted)
