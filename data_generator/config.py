@@ -175,3 +175,20 @@ CREDIT_ACCOUNT_TYPE_WEIGHTS = {
     "Liability": 0.30,
     "Revenue":   0.10,
 }
+
+# ======= BUDGETS =======
+
+# How many cost centers each budgetable account is allocated to
+# (not all accounts apply to all centers — realism)
+CENTERS_PER_BUDGETED_ACCOUNT_MIN = 2
+CENTERS_PER_BUDGETED_ACCOUNT_MAX = 5
+
+# Monthly budgeted amount range (ARS)
+BUDGET_AMOUNT_MIN = 50000
+BUDGET_AMOUNT_MAX = 800000
+
+# Budget version label (single active version for simplicity)
+BUDGET_VERSION = "v1_original"
+
+# Currency for budgets (most companies budget in local currency)
+BUDGET_CURRENCY = "ARS"

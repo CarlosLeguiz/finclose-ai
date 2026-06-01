@@ -19,8 +19,21 @@ from data_generator.config import (
     CURRENCY_DISTRIBUTION,
     DEBIT_ACCOUNT_TYPE_WEIGHTS,
     CREDIT_ACCOUNT_TYPE_WEIGHTS,
+    CENTERS_PER_BUDGETED_ACCOUNT_MIN,
+    CENTERS_PER_BUDGETED_ACCOUNT_MAX,
+    BUDGET_AMOUNT_MIN,
+    BUDGET_AMOUNT_MAX,
+    BUDGET_VERSION,
+    BUDGET_CURRENCY,
 )
-from data_generator.schemas import Period, JournalEntry, JournalLine, Account, CostCenter
+from data_generator.schemas import (
+    Period,
+    JournalEntry,
+    JournalLine,
+    Account,
+    CostCenter,
+    Budget,
+)
 
 
 def _weighted_choice(distribution: dict) -> str:
@@ -198,3 +211,65 @@ def generate_journal_lines(
         line_counter += 1
 
     return lines
+
+def generate_budgets(
+    accounts: list,
+    cost_centers: list,
+    periods: list,
+) -> list:
+    """Generate budget records for the (account, cost_center, period) grid.
+
+    Only Revenue and Expense accounts are budgeted. Each budgetable account
+    is allocated to a random subset of cost centers (not all centers budget
+    every account). One row per (account, cost_center, period) combination.
+
+    Args:
+        accounts: list of Account instances.
+        cost_centers: list of CostCenter instances.
+        periods: list of Period instances.
+
+    Returns:
+        List of Budget instances ready to be loaded into fact_budgets.
+    """
+    random.seed(RANDOM_SEED)
+
+    budgets = []
+    budget_counter = 1
+
+    # 1. Filter budgetable accounts (only Revenue and Expense)
+    budgetable_accounts = [
+        acc for acc in accounts
+        if acc.account_type in ("Revenue", "Expense")
+    ]
+
+    # 2. For each budgetable account, decide which cost centers it applies to
+    for account in budgetable_accounts:
+        num_centers = random.randint(
+            CENTERS_PER_BUDGETED_ACCOUNT_MIN,
+            CENTERS_PER_BUDGETED_ACCOUNT_MAX,
+        )
+        assigned_centers = random.sample(cost_centers, num_centers)
+
+        # 3. For each assigned center, generate a budget per period
+        for center in assigned_centers:
+            for period in periods:
+                amount = round(
+                    random.uniform(BUDGET_AMOUNT_MIN, BUDGET_AMOUNT_MAX),
+                    2,
+                )
+
+                budget = Budget(
+                    budget_id=f"BUD{budget_counter:06d}",
+                    account_id=account.account_id,
+                    cost_center_id=center.cost_center_id,
+                    period_id=period.period_id,
+                    budgeted_amount=amount,
+                    currency=BUDGET_CURRENCY,
+                    budget_version=BUDGET_VERSION,
+                    is_active=True,
+                    created_at=datetime.now(),
+                )
+                budgets.append(budget)
+                budget_counter += 1
+
+    return budgets

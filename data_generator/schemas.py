@@ -90,3 +90,21 @@ class JournalLine:
     currency: str                       # ISO 4217: "ARS", "USD"
     description: str | None             # optional line-specific description
     created_at: datetime
+
+@dataclass
+class Budget:
+    """Budgeted amount for a (account, cost_center, period) intersection.
+
+    Only Revenue and Expense accounts are budgeted, since Asset/Liability/Equity
+    accounts represent state rather than performance targets.
+    Multiple versions can exist; is_active flags the current one.
+    """
+    budget_id: str                # "BUD000001"
+    account_id: str               # FK to dim_accounts
+    cost_center_id: str           # FK to dim_cost_centers (NOT NULL)
+    period_id: str                # FK to dim_periods: "2024-03"
+    budgeted_amount: float        # planned amount in `currency`
+    currency: str                 # ISO 4217: typically "ARS"
+    budget_version: str           # "v1_original", "v2_revised", etc.
+    is_active: bool               # True for the currently active version
+    created_at: datetime
