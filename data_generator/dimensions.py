@@ -130,6 +130,9 @@ def _find_anchors(year: int, month: int, anchors: dict) -> tuple:
 
     Returns:
         Tuple ((y1, m1, rate1), (y2, m2, rate2)) where the target is between them.
+
+    Converting (year, month) into a single integer (year × 12 + month) gives each period a unique, sortable index.
+    This simplifies comparisons and ordering compared to working with tuples directly.
     """
     target_index = year * 12 + month  # convert (year, month) to a single number
     sorted_anchors = sorted(anchors.items())  # sort by (year, month)

@@ -1,0 +1,31 @@
+# Project name and version
+name: 'finclose_ai'
+version: '0.1.0'
+config-version: 2
+
+# Profile to use (must match the profile name in profiles.yml)
+profile: 'finclose_ai'
+
+# Paths to source files
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+# Where dbt writes compiled SQL and run artifacts
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Default materialization strategy per folder
+models:
+  finclose_ai:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

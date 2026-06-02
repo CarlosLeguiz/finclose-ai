@@ -58,4 +58,4 @@ build/
 
 # Logs
 *.log
-logs/
+logs/dbt_project/profiles.yml

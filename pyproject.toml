@@ -11,7 +11,9 @@ requires-python = "^3.10"
 dependencies = [
     "faker (>=40.19.1,<41.0.0)",
     # pandas pinned to v2.x — see docs/decisions/0001-pin-pandas-to-v2.md
-    "pandas (>=2.2.0,<3.0.0)"
+    "pandas (>=2.2.0,<3.0.0)",
+    "dbt-core (>=1.10,<2.0)",
+    "dbt-duckdb (>=1.10,<2.0)",
 ]
 
 
@@ -22,6 +24,6 @@ build-backend = "poetry.core.masonry.api"
 [dependency-groups]
 dev = [
     "pytest (>=9.0.3,<10.0.0)",
-    "black (>=26.5.1,<27.0.0)",
-    "ruff (>=0.15.14,<0.16.0)"
+    "ruff (>=0.15.14,<0.16.0)",
+    "black (>=24.0,<25.0)"
 ]
