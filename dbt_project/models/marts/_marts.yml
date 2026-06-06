@@ -1,0 +1,134 @@
+version: 2
+
+models:
+  - name: dim_accounts
+    description: "Chart of accounts dimension with derived classification columns."
+    columns:
+      - name: account_id
+        tests:
+          - unique
+          - not_null
+      - name: account_code
+        tests:
+          - unique
+          - not_null
+      - name: account_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense']
+      - name: normal_balance
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Debit', 'Credit']
+      - name: is_balance_sheet
+        tests:
+          - not_null
+      - name: is_income_statement
+        tests:
+          - not_null
+
+  - name: dim_cost_centers
+    description: "Cost centers dimension with department grouping."
+    columns:
+      - name: cost_center_id
+        tests:
+          - unique
+          - not_null
+      - name: code
+        tests:
+          - unique
+          - not_null
+      - name: department_group
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Operations', 'Commercial', 'Support', 'Other']
+
+  - name: dim_periods
+    description: "Calendar dimension with derived time labels and flags."
+    columns:
+      - name: period_id
+        tests:
+          - unique
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: month
+        tests:
+          - not_null
+      - name: quarter_label
+        tests:
+          - not_null
+      - name: days_in_period
+        tests:
+          - not_null
+
+  - name: fct_budget_vs_actual
+    description: "Variance analysis mart: actuals vs active budgets at account/cost_center/period grain."
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_accounts')
+                field: account_id
+      - name: period_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_periods')
+                field: period_id
+      - name: actual_amount
+        tests:
+          - not_null
+      - name: budgeted_amount
+        tests:
+          - not_null
+      - name: variance
+        tests:
+          - not_null
+
+  - name: fct_journal_lines
+    description: "Journal lines fact at line-level granularity, Posted entries only."
+    columns:
+      - name: je_line_id
+        tests:
+          - unique
+          - not_null
+      - name: je_id
+        tests:
+          - not_null
+      - name: account_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_accounts')
+                field: account_id
+      - name: period_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_periods')
+                field: period_id
+      - name: entry_status
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Posted']
+      - name: debit_amount
+        tests:
+          - not_null
+      - name: credit_amount
+        tests:
+          - not_null

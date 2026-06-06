@@ -1,0 +1,168 @@
+version: 2
+
+models:
+  - name: stg_accounts
+    description: "Chart of accounts staged from raw_accounts. 1:1 with source."
+    columns:
+      - name: account_id
+        description: "Surrogate key for the account."
+        tests:
+          - unique
+          - not_null
+      - name: account_code
+        description: "Business code of the account. Mutable over time."
+        tests:
+          - unique
+          - not_null
+      - name: account_type
+        description: "Accounting classification."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense']
+      - name: is_active
+        tests:
+          - not_null
+
+  - name: stg_cost_centers
+    description: "Cost centers staged from raw_cost_centers."
+    columns:
+      - name: cost_center_id
+        tests:
+          - unique
+          - not_null
+      - name: code
+        tests:
+          - unique
+          - not_null
+      - name: department
+        tests:
+          - not_null
+
+  - name: stg_periods
+    description: "Accounting periods staged from raw_periods."
+    columns:
+      - name: period_id
+        tests:
+          - unique
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: month
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                quote: false
+      - name: quarter
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false
+
+  - name: stg_exchange_rates
+    description: "Exchange rates staged from raw_exchange_rates."
+    columns:
+      - name: rate_id
+        tests:
+          - unique
+          - not_null
+      - name: from_currency
+        tests:
+          - not_null
+      - name: to_currency
+        tests:
+          - not_null
+      - name: rate
+        tests:
+          - not_null
+
+  - name: stg_journal_entries
+    description: "Journal entry headers staged from raw_journal_entries."
+    columns:
+      - name: je_id
+        tests:
+          - unique
+          - not_null
+      - name: period_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_periods')
+              field: period_id
+      - name: status
+        description: "Entry status. Filter to 'Posted' for official reporting."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Draft', 'Posted', 'Reversed']
+
+  - name: stg_journal_lines
+    description: "Journal entry lines staged from raw_journal_lines."
+    columns:
+      - name: je_line_id
+        tests:
+          - unique
+          - not_null
+      - name: je_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_journal_entries')
+              field: je_id
+      - name: account_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_accounts')
+              field: account_id
+      - name: cost_center_id
+        description: "Nullable for Asset/Liability/Equity accounts."
+        tests:
+          - relationships:
+              to: ref('stg_cost_centers')
+              field: cost_center_id
+      - name: debit_amount
+        tests:
+          - not_null
+      - name: credit_amount
+        tests:
+          - not_null
+
+  - name: stg_budgets
+    description: "Budget figures staged from raw_budgets."
+    columns:
+      - name: budget_id
+        tests:
+          - unique
+          - not_null
+      - name: account_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_accounts')
+              field: account_id
+      - name: cost_center_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_cost_centers')
+              field: cost_center_id
+      - name: period_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_periods')
+              field: period_id
+      - name: budgeted_amount
+        tests:
+          - not_null
+      - name: is_active
+        tests:
+          - not_null
