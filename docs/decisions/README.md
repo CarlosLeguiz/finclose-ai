@@ -1,3 +1,6 @@
+cd ~/projects/finclose-ai
+
+cat > README.md << 'EOF'
 # FinClose AI
 
 **Automated Financial Close & Variance Analysis Platform**
@@ -113,7 +116,7 @@ The transformation layer is built with dbt, following a 3-layer architecture: **
 
 ## Getting Started
 
-> Project under active development. Setup instructions will be completed as the project progresses.
+> Project under active development.
 
 ### Prerequisites
 - Linux / macOS / WSL2 (Ubuntu 22.04)
@@ -122,4 +125,58 @@ The transformation layer is built with dbt, following a 3-layer architecture: **
 - Docker (for Airflow)
 
 ### Quick start
+
 ```bash
+# Clone the repo
+git clone https://github.com/CarlosLeguiz/finclose-ai.git
+cd finclose-ai
+
+# Install dependencies
+poetry install
+
+# Set up environment
+cp .env.example .env
+
+# Generate synthetic data
+poetry run python data_generator/main.py
+
+# Load data into DuckDB
+poetry run python data_generator/load_to_duckdb.py
+
+# Run the dbt pipeline
+cd dbt_project
+poetry run dbt run
+poetry run dbt test
+```
+
+## Project Structure
+finclose-ai/
+├── data_generator/      # Python scripts: synthetic data + DuckDB loader
+├── dbt_project/         # dbt transformations
+│   ├── models/
+│   │   ├── staging/     # 7 stg_* models (1:1 with source)
+│   │   ├── intermediate/# 2 int_* models (business logic)
+│   │   └── marts/       # 5 dim_* / fct_* models (consumption-ready)
+│   └── tests/           # 3 singular business rule tests
+├── airflow/             # Airflow DAGs and orchestration (upcoming)
+├── dashboard/           # Streamlit interactive dashboard (upcoming)
+├── ai_layer/            # LangChain-based AI analysis agents (upcoming)
+├── data/                # Local data files (gitignored)
+├── docs/                # Architecture and design documentation
+│   └── decisions/       # ADRs (Architectural Decision Records)
+└── tests/               # Python unit and integration tests
+
+## About
+
+Built by **Carlos Leguizamon Guillaumet** as a portfolio project combining accounting expertise (CPA background) with modern data engineering and AI.
+
+- Córdoba, Argentina
+- [LinkedIn](https://www.linkedin.com/in/carlos-guillaumet)
+- carlosleguizamonguillaumet1998@gmail.com
+
+---
+
+## License
+
+MIT
+EOF

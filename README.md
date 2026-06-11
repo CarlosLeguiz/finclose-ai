@@ -42,8 +42,6 @@ The pipeline follows a modern modular data stack:
    - **Streamlit dashboard** for interactive exploration of P&L, variances, and trends
    - **LangChain + Anthropic Claude** agent that generates executive-level variance commentary in natural language
 
-See `docs/architecture.md` for the detailed diagram (added in Week 2).
-
 ---
 
 ## Tech Stack
@@ -63,6 +61,7 @@ See `docs/architecture.md` for the detailed diagram (added in Week 2).
 | **Environment** | WSL2 / Ubuntu 22.04 |
 
 ---
+
 ## Data Model
 
 The pipeline operates on a dimensional data model with 7 tables (4 dimensions + 3 facts) designed to represent the accounting reality of a mid-size manufacturing company.
@@ -71,13 +70,41 @@ The pipeline operates on a dimensional data model with 7 tables (4 dimensions + 
 
 See [`docs/data_model.md`](./docs/data_model.md) for full details, including column definitions, business rules, and design rationale.
 
+---
+
+## Data Pipeline (dbt)
+
+The transformation layer is built with dbt, following a 3-layer architecture: **staging → intermediate → marts**. The full lineage graph below shows how raw tables flow through staging models, business logic in intermediate models, and finally into dimension and fact tables ready for consumption.
+
+![dbt DAG](./docs/dbt_dag_full.png)
+
+### Pipeline metrics
+
+| Metric | Value |
+|--------|-------|
+| Total dbt models | 14 |
+| Staging models | 7 |
+| Intermediate models | 2 |
+| Mart models | 5 (3 dimensions + 2 facts) |
+| Data tests | 92 (89 generic + 3 singular business rule tests) |
+| Synthetic rows processed | 23,159 |
+
+### Key design decisions
+
+- **Materializations:** staging and intermediate as `view` (always fresh, no storage cost); marts as `table` (fast consumption for dashboards).
+- **Double-entry integrity:** preserved end-to-end through aggregations and validated with a singular test (`assert_journal_entries_balanced`).
+- **FULL OUTER JOIN** in `fct_budget_vs_actual` to preserve unbudgeted actuals and unused budgets — both critical for FP&A variance analysis.
+- **Derived analytical columns** in dim tables (`normal_balance`, `is_balance_sheet`, `department_group`, `signed_amount`) that encode accounting domain knowledge once and let downstream consumers reuse it.
+
+---
+
 ## Project Roadmap (16 weeks)
 
-- [ ] **Week 1:** Environment setup and project scaffolding
-- [ ] **Week 2:** Accounting data model design (7 core tables)
-- [ ] **Weeks 3-4:** Synthetic data generation with Python + Faker
-- [ ] **Weeks 5-7:** dbt staging and intermediate models
-- [ ] **Weeks 8-9:** dbt marts and data quality tests
+- [x] **Week 1:** Environment setup and project scaffolding
+- [x] **Week 2:** Accounting data model design (7 core tables)
+- [x] **Weeks 3-4:** Synthetic data generation with Python + Faker
+- [x] **Weeks 5-7:** dbt staging and intermediate models
+- [x] **Weeks 8-9:** dbt marts and data quality tests
 - [ ] **Weeks 10-11:** Airflow DAGs and Streamlit dashboard
 - [ ] **Weeks 12-14:** LangChain-based AI variance analysis agent
 - [ ] **Weeks 15-16:** Documentation, deploy, and Snowflake validation
@@ -86,7 +113,7 @@ See [`docs/data_model.md`](./docs/data_model.md) for full details, including col
 
 ## Getting Started
 
-> Project under active development. Setup instructions will be completed as the project progresses.
+> Project under active development.
 
 ### Prerequisites
 - Linux / macOS / WSL2 (Ubuntu 22.04)
@@ -94,10 +121,11 @@ See [`docs/data_model.md`](./docs/data_model.md) for full details, including col
 - Poetry
 - Docker (for Airflow)
 
-### Quick start (coming soon)
+### Quick start
+
 ```bash
 # Clone the repo
-git clone https://github.com/<username>/finclose-ai.git
+git clone https://github.com/CarlosLeguiz/finclose-ai.git
 cd finclose-ai
 
 # Install dependencies
@@ -105,25 +133,35 @@ poetry install
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your credentials
 
-# Generate sample data (week 3+)
-poetry run python data_generator/generate.py
+# Generate synthetic data
+poetry run python data_generator/main.py
+
+# Load data into DuckDB
+poetry run python data_generator/load_to_duckdb.py
+
+# Run the dbt pipeline
+cd dbt_project
+poetry run dbt run
+poetry run dbt test
 ```
 
 ## Project Structure
-
-```
 finclose-ai/
-├── data_generator/   # Python scripts to generate synthetic accounting data
-├── dbt_project/      # dbt transformations (staging → marts)
-├── airflow/          # Airflow DAGs and orchestration
-├── dashboard/        # Streamlit interactive dashboard
-├── ai_layer/         # LangChain-based AI analysis agents
-├── data/             # Local data files (gitignored)
-├── docs/             # Architecture and design documentation
-└── tests/            # Python unit and integration tests
-```
+├── data_generator/      # Python scripts: synthetic data + DuckDB loader
+├── dbt_project/         # dbt transformations
+│   ├── models/
+│   │   ├── staging/     # 7 stg_* models (1:1 with source)
+│   │   ├── intermediate/# 2 int_* models (business logic)
+│   │   └── marts/       # 5 dim_* / fct_* models (consumption-ready)
+│   └── tests/           # 3 singular business rule tests
+├── airflow/             # Airflow DAGs and orchestration (upcoming)
+├── dashboard/           # Streamlit interactive dashboard (upcoming)
+├── ai_layer/            # LangChain-based AI analysis agents (upcoming)
+├── data/                # Local data files (gitignored)
+├── docs/                # Architecture and design documentation
+│   └── decisions/       # ADRs (Architectural Decision Records)
+└── tests/               # Python unit and integration tests
 
 ## About
 
