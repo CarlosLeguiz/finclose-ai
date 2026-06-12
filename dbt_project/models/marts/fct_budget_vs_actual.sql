@@ -4,6 +4,9 @@
 -- Preserves actuals without budget and budgets without actual.
 -- Computes variance (actual - budget) and variance_pct, with NULL guard
 -- against division by zero. Central fact table for the FP&A dashboard.
+--
+-- Uses int_actuals_full.signed_amount (sign-normalized per account_type)
+-- so that variance comparison vs budget is mathematically meaningful.
 
 WITH actuals AS (
     SELECT * FROM {{ ref('int_actuals_full') }}
@@ -24,7 +27,7 @@ joined AS (
         COALESCE(a.account_id, b.account_id) AS account_id,
         COALESCE(a.cost_center_id, b.cost_center_id) AS cost_center_id,
         COALESCE(a.period_id, b.period_id) AS period_id,
-        COALESCE(a.net_amount, 0) AS actual_amount,
+        COALESCE(a.signed_amount, 0) AS actual_amount,
         COALESCE(b.budgeted_amount, 0) AS budgeted_amount
     FROM actuals a
     FULL OUTER JOIN budgets b

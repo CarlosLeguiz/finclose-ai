@@ -162,18 +162,24 @@ CURRENCY_DISTRIBUTION = {
 }
 
 # Account type weights for debit lines
-# (most debits are Expense, some Asset)
+# Realistic distribution where each account type can be debited,
+# but with frequencies reflecting actual accounting practice.
 DEBIT_ACCOUNT_TYPE_WEIGHTS = {
-    "Expense": 0.70,
-    "Asset":   0.30,
+    "Expense":   0.55,   # most debits: recording costs
+    "Asset":     0.35,   # increasing assets (inventory, AR, cash from sales)
+    "Liability": 0.05,   # paying off debts
+    "Revenue":   0.03,   # rare: sales returns / cancellations
+    "Equity":    0.02,   # very rare: dividend distributions, withdrawals
 }
 
-# Account type weights for credit lines (the balancing line)
-# (most credits go to Asset:Caja/Banco or Liability)
+# Account type weights for credit lines
+# All types can be credited, with frequencies reflecting accounting practice.
 CREDIT_ACCOUNT_TYPE_WEIGHTS = {
-    "Asset":     0.60,
-    "Liability": 0.30,
-    "Revenue":   0.10,
+    "Asset":     0.30,   # most credits: cash outflow, asset reductions
+    "Revenue":   0.35,   # recording sales
+    "Liability": 0.25,   # creating obligations (AP, accruals)
+    "Expense":   0.05,   # rare: expense reversals / corrections
+    "Equity":    0.05,   # rare: capital contributions
 }
 
 # ======= BUDGETS =======
