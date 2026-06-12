@@ -60,3 +60,4 @@ build/
 *.log
 logs/
 dbt_project/profiles.yml
+logs/

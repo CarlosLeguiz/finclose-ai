@@ -1,36 +1,38 @@
 """Data access layer for the Streamlit dashboard.
 
-Centralizes the connection to DuckDB and provides cached query functions.
-All Streamlit pages should import from here instead of opening their own
-DuckDB connections.
+Uses SQLAlchemy + duckdb-engine to share the same connection pool with
+the AI agent layer (ai_layer/agent/connection.py). Both must use the same
+driver to avoid "different configuration" conflicts on the same DuckDB file.
 """
 
 from pathlib import Path
 
-import duckdb
 import pandas as pd
 import streamlit as st
+from sqlalchemy import create_engine, text
 
 DUCKDB_PATH = Path(__file__).resolve().parents[2] / "data" / "finclose.duckdb"
 
 
 @st.cache_resource
-def get_connection() -> duckdb.DuckDBPyConnection:
-    """Return a read-only DuckDB connection, cached across reruns.
+def get_engine():
+    """Return a shared SQLAlchemy engine for the DuckDB warehouse.
 
-    @st.cache_resource ensures we don't open a new connection on every
-    user interaction (which would be expensive and would conflict with
-    other readers).
+    Cached across reruns via @st.cache_resource so we don't open multiple
+    connections to the same file (which causes DuckDB to error out).
     """
-    return duckdb.connect(str(DUCKDB_PATH), read_only=True)
+    return create_engine(
+        f"duckdb:///{DUCKDB_PATH}",
+        connect_args={"read_only": True},
+    )
 
 
 @st.cache_data(ttl=300)
 def run_query(query: str) -> pd.DataFrame:
     """Execute a SQL query and return the result as a pandas DataFrame.
 
-    Results are cached for 5 minutes (ttl=300) to avoid re-running the
-    same query repeatedly when the user interacts with widgets.
+    Results cached 5 minutes to avoid redundant queries on widget interactions.
     """
-    con = get_connection()
-    return con.execute(query).fetchdf()
+    engine = get_engine()
+    with engine.connect() as conn:
+        return pd.read_sql(text(query), conn)

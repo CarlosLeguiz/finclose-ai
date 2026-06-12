@@ -1,24 +1,27 @@
-"""Variance Analysis page — actuals vs budget by account/cost center/period."""
+"""Variance Analysis page - actuals vs budget by account/cost center/period."""
+
+import sys
+from pathlib import Path
+
+# Add project root to path so we can import ai_layer
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import plotly.express as px
 import streamlit as st
 
 from utils.data import run_query
+from ai_layer.agent.tools import explain_variance
 
-# ---------------------------------------------------------------------------
-# Page config
-# ---------------------------------------------------------------------------
+
 st.set_page_config(
-    page_title="Variance Analysis — FinClose AI",
+    page_title="Variance Analysis - FinClose AI",
     layout="wide",
 )
 
 st.title("Variance Analysis")
 st.caption("Actuals vs Budget at account / cost center / period level")
 
-# ---------------------------------------------------------------------------
-# Load enriched data (single query with all joins)
-# ---------------------------------------------------------------------------
+
 @st.cache_data(ttl=300)
 def load_variance_data():
     """Load fct_budget_vs_actual enriched with dimension labels."""
@@ -46,14 +49,13 @@ def load_variance_data():
         LEFT JOIN main.dim_accounts a USING (account_id)
         LEFT JOIN main.dim_cost_centers cc USING (cost_center_id)
         LEFT JOIN main.dim_periods p USING (period_id)
+        WHERE a.account_type IN ('Revenue', 'Expense')
     """)
 
 
 df = load_variance_data()
 
-# ---------------------------------------------------------------------------
 # Sidebar filters
-# ---------------------------------------------------------------------------
 st.sidebar.header("Filters")
 
 available_years = sorted(df["year"].dropna().unique().tolist())
@@ -73,16 +75,14 @@ available_account_types = sorted(df["account_type"].dropna().unique().tolist())
 selected_account_types = st.sidebar.multiselect(
     "Account Type",
     options=available_account_types,
-    default=["Revenue", "Expense"],
+    default=available_account_types,
 )
 
-# ---------------------------------------------------------------------------
 # Apply filters
-# ---------------------------------------------------------------------------
 filtered = df[
     (df["year"] == selected_year)
     & (df["quarter"].isin(selected_quarters))
-    & (df["department"].isin(selected_departments))
+    & (df["department"].isin(selected_departments) | df["department"].isna())
     & (df["account_type"].isin(selected_account_types))
 ].copy()
 
@@ -90,9 +90,7 @@ if filtered.empty:
     st.warning("No data matches the selected filters.")
     st.stop()
 
-# ---------------------------------------------------------------------------
 # KPIs row
-# ---------------------------------------------------------------------------
 total_actual = filtered["actual_amount"].sum()
 total_budget = filtered["budgeted_amount"].sum()
 total_variance = filtered["variance"].sum()
@@ -111,9 +109,7 @@ col4.metric("Budget Utilization", f"{utilization:.1f}%")
 
 st.markdown("---")
 
-# ---------------------------------------------------------------------------
-# Chart: Top 10 accounts by absolute variance
-# ---------------------------------------------------------------------------
+# Top 10 chart
 st.subheader("Top 10 accounts by absolute variance")
 
 top10 = (
@@ -140,9 +136,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 
-# ---------------------------------------------------------------------------
 # Detail table
-# ---------------------------------------------------------------------------
 st.subheader("Detail")
 
 display_cols = [
@@ -163,3 +157,53 @@ st.dataframe(
     use_container_width=True,
     height=400,
 )
+
+st.markdown("---")
+
+# AI-powered variance explanation
+st.subheader("AI Variance Analysis")
+st.caption("Select an account and period to get an executive analysis powered by AI.")
+
+col_a, col_b, col_c = st.columns([2, 2, 1])
+
+with col_a:
+    account_options = filtered[["account_id", "account_code", "account_name"]].drop_duplicates()
+    account_options["label"] = (
+        account_options["account_code"].astype(str)
+        + " - "
+        + account_options["account_name"]
+    )
+    account_options = account_options.sort_values("label")
+
+    selected_account_label = st.selectbox(
+        "Account",
+        options=account_options["label"].tolist(),
+        index=0,
+    )
+    selected_account_id = account_options.loc[
+        account_options["label"] == selected_account_label, "account_id"
+    ].iloc[0]
+
+with col_b:
+    period_options = sorted(filtered["period_id"].dropna().unique().tolist())
+    selected_period_id = st.selectbox(
+        "Period",
+        options=period_options,
+        index=0,
+    )
+
+with col_c:
+    st.write("")  # spacing
+    st.write("")  # spacing
+    analyze_clicked = st.button("Explain Variance", use_container_width=True)
+
+if analyze_clicked:
+    with st.spinner("Generating AI analysis..."):
+        try:
+            analysis = explain_variance(
+                account_id=selected_account_id,
+                period_id=selected_period_id,
+            )
+            st.markdown(analysis)
+        except Exception as e:
+            st.error(f"Error generating analysis: {e}")
