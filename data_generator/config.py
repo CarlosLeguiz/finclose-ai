@@ -285,7 +285,7 @@ CENTERS_PER_BUDGETED_ACCOUNT_MAX = 5
 
 # Monthly budgeted amount range (ARS)
 BUDGET_AMOUNT_MIN = 50000
-BUDGET_AMOUNT_MAX = 800000
+BUDGET_AMOUNT_MAX = 400000
 
 # Budget version label (single active version for simplicity)
 BUDGET_VERSION = "v1_original"
