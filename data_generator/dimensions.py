@@ -19,7 +19,8 @@ from data_generator.config import (
     USD_ARS_ANCHORS,
     EUR_USD_RATIO,
     EXCHANGE_RATE_SOURCE,
-    RATE_MONTHLY_VOLATILITY
+    RATE_MONTHLY_VOLATILITY,
+    REALISTIC_ACCOUNT_NAMES,
 )
 from data_generator.schemas import Account, CostCenter, Period, ExchangeRate
 
@@ -27,30 +28,39 @@ from data_generator.schemas import Account, CostCenter, Period, ExchangeRate
 def generate_accounts(num_accounts: int = NUM_ACCOUNTS) -> list[Account]:
     """
     Generate a list of synthetic Account instances for the dim_accounts table.
-    
+
+    Uses realistic account names from REALISTIC_ACCOUNT_NAMES (defined in config.py)
+    instead of Faker's business jargon. Each type gets names from its dedicated list,
+    in the same order as ACCOUNT_DISTRIBUTION.
+
     Args:
         num_accounts: Number of accounts to generate. Defaults to NUM_ACCOUNTS from config.
-    
+
     Returns:
         List of Account instances ready to be loaded into dim_accounts.
     """
-     # Initialize Faker with locale and seed for reproducibility
-    fake = Faker(FAKER_LOCALE)
-    Faker.seed(RANDOM_SEED)
-
     accounts = []
     account_counter = 0
 
     for account_type, count in ACCOUNT_DISTRIBUTION.items():
         min_code, max_code = ACCOUNT_TYPE_RANGES[account_type]
-        
+        type_names = REALISTIC_ACCOUNT_NAMES[account_type]
+
+        if len(type_names) < count:
+            raise ValueError(
+                f"REALISTIC_ACCOUNT_NAMES['{account_type}'] has only {len(type_names)} "
+                f"names but ACCOUNT_DISTRIBUTION requires {count}. "
+                f"Add more names in config.py."
+            )
+
         for offset in range(count):
             current_code = min_code + offset
+            account_name = type_names[offset]
 
             account = Account(
                 account_id=f"ACC{account_counter:03d}",
                 account_code=f"{current_code}",
-                account_name=fake.bs().capitalize(),
+                account_name=account_name,
                 account_type=account_type,
                 parent_account_id=None,
                 is_active=True,
@@ -58,7 +68,7 @@ def generate_accounts(num_accounts: int = NUM_ACCOUNTS) -> list[Account]:
             )
             accounts.append(account)
             account_counter += 1
-        
+
     return accounts
 
 def generate_cost_centers() -> list[CostCenter]:
