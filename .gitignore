@@ -61,3 +61,4 @@ build/
 logs/
 dbt_project/profiles.yml
 logs/
+.coverage
