@@ -30,17 +30,17 @@ The goal: reduce a 3-5 day manual close to a 30-minute automated process.
 
 The pipeline follows a modern modular data stack:
 
-**1. Ingestion Layer** — Python scripts using Faker generate realistic synthetic accounting data (journal entries, budgets, chart of accounts).
+**1. Ingestion Layer** — Python scripts using Faker generate realistic synthetic accounting data.
 
-**2. Storage Layer** — DuckDB serves as the analytical warehouse during development (zero cost, embedded). Snowflake is used in week 16 for cloud validation.
+**2. Storage Layer** — DuckDB serves as the analytical warehouse during development. Snowflake validation planned for week 16.
 
-**3. Transformation Layer** — dbt models data in three layers: `staging` (raw cleaned), `intermediate` (business logic), and `marts` (final tables for consumption). Includes automated tests and documentation.
+**3. Transformation Layer** — dbt models data in three layers: staging, intermediate, and marts. Includes 92 automated data tests.
 
-**4. Orchestration Layer** — Apache Airflow schedules and orchestrates the entire pipeline with daily runs.
+**4. Orchestration Layer** — Apache Airflow orchestrates the pipeline on a monthly schedule with automatic retries, timeouts, and failure callbacks.
 
 **5. Consumption Layer** — Two parallel outputs:
-   - **Streamlit dashboard** for interactive exploration of P&L, variances, and trends
-   - **LangChain + Anthropic Claude** agent that generates executive-level variance commentary in natural language
+   - **Streamlit dashboard** with 5 pages for interactive exploration
+   - **LangChain + OpenAI** agent that generates variance commentary in natural language
 
 ---
 
@@ -53,28 +53,28 @@ The pipeline follows a modern modular data stack:
 | **Data Generation** | Faker |
 | **Warehouse (dev)** | DuckDB |
 | **Warehouse (validation)** | Snowflake |
-| **Transformation** | dbt (dbt-duckdb, dbt-snowflake) |
-| **Orchestration** | Apache Airflow |
-| **Dashboard** | Streamlit |
-| **AI Layer** | LangChain + Anthropic Claude |
-| **Containerization** | Docker |
+| **Transformation** | dbt-core 1.11.11 + dbt-duckdb 1.10.1 |
+| **Orchestration** | Apache Airflow 3.1.1 |
+| **Dashboard** | Streamlit + Plotly |
+| **AI Layer** | LangChain + OpenAI gpt-4o-mini |
+| **Containerization** | Docker Compose |
 | **Environment** | WSL2 / Ubuntu 22.04 |
 
 ---
 
 ## Data Model
 
-The pipeline operates on a dimensional data model with 7 tables (4 dimensions + 3 facts) designed to represent the accounting reality of a mid-size manufacturing company.
+The pipeline operates on a dimensional data model with 7 tables (4 dimensions + 3 facts).
 
 ![Data Model](./docs/data_model.png)
 
-See [`docs/data_model.md`](./docs/data_model.md) for full details, including column definitions, business rules, and design rationale.
+See [`docs/data_model.md`](./docs/data_model.md) for full details.
 
 ---
 
 ## Data Pipeline (dbt)
 
-The transformation layer is built with dbt, following a 3-layer architecture: **staging → intermediate → marts**. The full lineage graph below shows how raw tables flow through staging models, business logic in intermediate models, and finally into dimension and fact tables ready for consumption.
+The transformation layer follows a 3-layer architecture: staging, intermediate, and marts.
 
 ![dbt DAG](./docs/dbt_dag_full.png)
 
@@ -82,86 +82,86 @@ The transformation layer is built with dbt, following a 3-layer architecture: **
 
 | Metric | Value |
 |--------|-------|
-| Total dbt models | 14 |
-| Staging models | 7 |
-| Intermediate models | 2 |
-| Mart models | 5 (3 dimensions + 2 facts) |
-| Data tests | 92 (89 generic + 3 singular business rule tests) |
-| Synthetic rows processed | 23,159 |
-
-### Key design decisions
-
-- **Materializations:** staging and intermediate as `view` (always fresh, no storage cost); marts as `table` (fast consumption for dashboards).
-- **Double-entry integrity:** preserved end-to-end through aggregations and validated with a singular test (`assert_journal_entries_balanced`).
-- **FULL OUTER JOIN** in `fct_budget_vs_actual` to preserve unbudgeted actuals and unused budgets — both critical for FP&A variance analysis.
-- **Derived analytical columns** in dim tables (`normal_balance`, `is_balance_sheet`, `department_group`, `signed_amount`) that encode accounting domain knowledge once and let downstream consumers reuse it.
+| dbt models | 14 |
+| dbt data tests | 92 |
+| Python unit tests | 51 (84% coverage) |
+| Synthetic rows | 23,000+ |
 
 ---
 
-## Project Roadmap (16 weeks)
+## Project Roadmap
 
-- [x] **Week 1:** Environment setup and project scaffolding
-- [x] **Week 2:** Accounting data model design (7 core tables)
-- [x] **Weeks 3-4:** Synthetic data generation with Python + Faker
-- [x] **Weeks 5-7:** dbt staging and intermediate models
-- [x] **Weeks 8-9:** dbt marts and data quality tests
-- [ ] **Weeks 10-11:** Airflow DAGs and Streamlit dashboard
-- [ ] **Weeks 12-14:** LangChain-based AI variance analysis agent
-- [ ] **Weeks 15-16:** Documentation, deploy, and Snowflake validation
+- [x] Week 1: Environment setup and project scaffolding
+- [x] Week 2: Accounting data model design
+- [x] Weeks 3-4: Synthetic data generation with Python + Faker
+- [x] Weeks 5-7: dbt staging and intermediate models
+- [x] Weeks 8-9: dbt marts and data quality tests
+- [x] Weeks 10-11: Airflow orchestration and Streamlit dashboard
+- [x] Weeks 12-14: LangChain-based AI variance analysis agent
+- [ ] Weeks 15-16: Snowflake validation and final documentation
 
 ---
 
 ## Getting Started
 
-> Project under active development.
-
 ### Prerequisites
+
 - Linux / macOS / WSL2 (Ubuntu 22.04)
 - Python 3.10+
 - Poetry
 - Docker (for Airflow)
 
-### Quick start
+### Quick start (manual)
 
 ```bash
-# Clone the repo
 git clone https://github.com/CarlosLeguiz/finclose-ai.git
 cd finclose-ai
-
-# Install dependencies
 poetry install
-
-# Set up environment
 cp .env.example .env
-
-# Generate synthetic data
-poetry run python data_generator/main.py
-
-# Load data into DuckDB
-poetry run python data_generator/load_to_duckdb.py
-
-# Run the dbt pipeline
+poetry run python -m data_generator.main
+poetry run python -m data_generator.load_to_duckdb
 cd dbt_project
-poetry run dbt run
-poetry run dbt test
+poetry run dbt build
 ```
+
+### Running with Airflow
+
+```bash
+cd airflow
+docker compose build
+docker compose up -d
+# Access UI at http://localhost:8080 (airflow / airflow)
+docker compose down
+```
+
+The DAG `finclose_pipeline` runs 5 sequential tasks with automatic retries, timeouts, and failure callbacks. See [`docs/decisions/0005-orchestrate-pipeline-with-airflow.md`](./docs/decisions/0005-orchestrate-pipeline-with-airflow.md).
+
+### Running the dashboard
+
+```bash
+poetry run streamlit run dashboard/Summary.py
+```
+
+---
 
 ## Project Structure
 finclose-ai/
-├── data_generator/      # Python scripts: synthetic data + DuckDB loader
-├── dbt_project/         # dbt transformations
-│   ├── models/
-│   │   ├── staging/     # 7 stg_* models (1:1 with source)
-│   │   ├── intermediate/# 2 int_* models (business logic)
-│   │   └── marts/       # 5 dim_* / fct_* models (consumption-ready)
-│   └── tests/           # 3 singular business rule tests
-├── airflow/             # Airflow DAGs and orchestration (upcoming)
-├── dashboard/           # Streamlit interactive dashboard (upcoming)
-├── ai_layer/            # LangChain-based AI analysis agents (upcoming)
+
+├── data_generator/      # Synthetic data generation + DuckDB loader
+
+├── dbt_project/         # 14 dbt models with 92 data tests
+
+├── airflow/             # Airflow DAG, Dockerfile, docker-compose
+
+├── dashboard/           # Streamlit dashboard (5 pages)
+
+├── ai_layer/            # LangChain SQL agent
+
 ├── data/                # Local data files (gitignored)
-├── docs/                # Architecture and design documentation
-│   └── decisions/       # ADRs (Architectural Decision Records)
-└── tests/               # Python unit and integration tests
+
+├── docs/                # Documentation and ADRs
+
+└── tests/               # 51 pytest unit tests
 
 ## About
 
