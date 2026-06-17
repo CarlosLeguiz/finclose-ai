@@ -62,3 +62,8 @@ logs/
 dbt_project/profiles.yml
 logs/
 .coverage
+
+# Airflow runtime
+airflow/plugins/
+airflow/config/
+airflow/dags/__pycache__/
