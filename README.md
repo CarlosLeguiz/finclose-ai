@@ -1,5 +1,6 @@
 # FinClose AI
 ![CI](https://github.com/CarlosLeguiz/finclose-ai/actions/workflows/ci.yml/badge.svg)
+[![dbt docs](https://img.shields.io/badge/dbt%20docs-live-orange)](https://carlosleguiz.github.io/finclose-ai)
 
 **Automated Financial Close & Variance Analysis Platform**
 
