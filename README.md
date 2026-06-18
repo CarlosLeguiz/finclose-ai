@@ -1,4 +1,5 @@
 # FinClose AI
+![CI](https://github.com/CarlosLeguiz/finclose-ai/actions/workflows/ci.yml/badge.svg)
 
 **Automated Financial Close & Variance Analysis Platform**
 
