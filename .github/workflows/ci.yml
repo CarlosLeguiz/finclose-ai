@@ -58,7 +58,7 @@ jobs:
         run: poetry install --no-interaction --no-root
 
       - name: Generate dbt docs
-        run: poetry run dbt docs generate --profiles-dir .
+        run: poetry run dbt docs generate --profiles-dir . --target ci
         working-directory: dbt_project
 
       - name: Upload Pages artifact
