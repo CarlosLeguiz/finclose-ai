@@ -36,3 +36,9 @@ dev = [
     "black (>=24.0,<25.0)",
     "pytest-cov (>=7.1.0,<8.0.0)"
 ]
+
+[tool.pytest.ini_options]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
