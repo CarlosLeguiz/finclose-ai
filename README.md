@@ -34,7 +34,7 @@ The pipeline follows a modern modular data stack:
 
 **1. Ingestion Layer** — Python scripts using Faker generate realistic synthetic accounting data.
 
-**2. Storage Layer** — DuckDB serves as the analytical warehouse during development. Snowflake validation planned for week 16.
+**2. Storage Layer** — DuckDB serves as the analytical warehouse — an embedded OLAP engine optimized for analytical workloads. The architecture is warehouse-agnostic: dbt abstracts SQL dialects, so migrating to Snowflake, BigQuery, or Redshift is a matter of swapping the adapter and updating `profiles.yml`.
 
 **3. Transformation Layer** — dbt models data in three layers: staging, intermediate, and marts. Includes 92 automated data tests.
 
@@ -54,7 +54,6 @@ The pipeline follows a modern modular data stack:
 | **Dependency Management** | Poetry |
 | **Data Generation** | Faker |
 | **Warehouse (dev)** | DuckDB |
-| **Warehouse (validation)** | Snowflake |
 | **Transformation** | dbt-core 1.11.11 + dbt-duckdb 1.10.1 |
 | **Orchestration** | Apache Airflow 3.1.1 |
 | **Dashboard** | Streamlit + Plotly |
@@ -100,7 +99,7 @@ The transformation layer follows a 3-layer architecture: staging, intermediate, 
 - [x] Weeks 8-9: dbt marts and data quality tests
 - [x] Weeks 10-11: Airflow orchestration and Streamlit dashboard
 - [x] Weeks 12-14: LangChain-based AI variance analysis agent
-- [ ] Weeks 15-16: Snowflake validation and final documentation
+- [x] Weeks 15-16: CI/CD with GitHub Actions and final documentation
 
 ---
 

@@ -1,6 +1,3 @@
-cd ~/projects/finclose-ai
-
-cat > README.md << 'EOF'
 # FinClose AI
 
 **Automated Financial Close & Variance Analysis Platform**
@@ -35,15 +32,15 @@ The pipeline follows a modern modular data stack:
 
 **1. Ingestion Layer** — Python scripts using Faker generate realistic synthetic accounting data (journal entries, budgets, chart of accounts).
 
-**2. Storage Layer** — DuckDB serves as the analytical warehouse during development (zero cost, embedded). Snowflake is used in week 16 for cloud validation.
+**2. Storage Layer** — DuckDB serves as the analytical warehouse — an embedded OLAP engine optimized for analytical workloads (zero cost, no infrastructure). The architecture is warehouse-agnostic: dbt abstracts SQL dialects, so migrating to Snowflake, BigQuery, or Redshift is a matter of swapping the adapter and updating `profiles.yml`.
 
-**3. Transformation Layer** — dbt models data in three layers: `staging` (raw cleaned), `intermediate` (business logic), and `marts` (final tables for consumption). Includes automated tests and documentation.
+**3. Transformation Layer** — dbt models data in three layers: `staging` (raw cleaned), `intermediate` (business logic), and `marts` (final tables for consumption). Includes 92 automated data tests.
 
-**4. Orchestration Layer** — Apache Airflow schedules and orchestrates the entire pipeline with daily runs.
+**4. Orchestration Layer** — Apache Airflow orchestrates the pipeline on a monthly schedule with automatic retries, timeouts, and failure callbacks.
 
 **5. Consumption Layer** — Two parallel outputs:
-   - **Streamlit dashboard** for interactive exploration of P&L, variances, and trends
-   - **LangChain + Anthropic Claude** agent that generates executive-level variance commentary in natural language
+   - **Streamlit dashboard** with 5 pages for interactive exploration of P&L, variances, and journal lines
+   - **LangChain + OpenAI** agent that generates executive-level variance commentary in natural language
 
 ---
 
@@ -55,12 +52,11 @@ The pipeline follows a modern modular data stack:
 | **Dependency Management** | Poetry |
 | **Data Generation** | Faker |
 | **Warehouse (dev)** | DuckDB |
-| **Warehouse (validation)** | Snowflake |
-| **Transformation** | dbt (dbt-duckdb, dbt-snowflake) |
-| **Orchestration** | Apache Airflow |
-| **Dashboard** | Streamlit |
-| **AI Layer** | LangChain + Anthropic Claude |
-| **Containerization** | Docker |
+| **Transformation** | dbt-core 1.11.11 + dbt-duckdb 1.10.1 |
+| **Orchestration** | Apache Airflow 3.1.1 |
+| **Dashboard** | Streamlit + Plotly |
+| **AI Layer** | LangChain + OpenAI gpt-4o-mini |
+| **Containerization** | Docker Compose |
 | **Environment** | WSL2 / Ubuntu 22.04 |
 
 ---
@@ -89,8 +85,9 @@ The transformation layer is built with dbt, following a 3-layer architecture: **
 | Staging models | 7 |
 | Intermediate models | 2 |
 | Mart models | 5 (3 dimensions + 2 facts) |
-| Data tests | 92 (89 generic + 3 singular business rule tests) |
-| Synthetic rows processed | 23,159 |
+| dbt data tests | 92 (89 generic + 3 singular business rule tests) |
+| Python unit tests | 51 (84% coverage on data_generator) |
+| Synthetic rows processed | 23,000+ |
 
 ### Key design decisions
 
@@ -108,23 +105,22 @@ The transformation layer is built with dbt, following a 3-layer architecture: **
 - [x] **Weeks 3-4:** Synthetic data generation with Python + Faker
 - [x] **Weeks 5-7:** dbt staging and intermediate models
 - [x] **Weeks 8-9:** dbt marts and data quality tests
-- [ ] **Weeks 10-11:** Airflow DAGs and Streamlit dashboard
-- [ ] **Weeks 12-14:** LangChain-based AI variance analysis agent
-- [ ] **Weeks 15-16:** Documentation, deploy, and Snowflake validation
+- [x] **Weeks 10-11:** Airflow orchestration and Streamlit dashboard
+- [x] **Weeks 12-14:** LangChain-based AI variance analysis agent
+- [x] **Weeks 15-16:** CI/CD with GitHub Actions and final documentation
 
 ---
 
 ## Getting Started
 
-> Project under active development.
-
 ### Prerequisites
+
 - Linux / macOS / WSL2 (Ubuntu 22.04)
 - Python 3.10+
 - Poetry
-- Docker (for Airflow)
+- Docker (for Airflow orchestration)
 
-### Quick start
+### Quick start (manual)
 
 ```bash
 # Clone the repo
@@ -138,33 +134,82 @@ poetry install
 cp .env.example .env
 
 # Generate synthetic data
-poetry run python data_generator/main.py
+poetry run python -m data_generator.main
 
 # Load data into DuckDB
-poetry run python data_generator/load_to_duckdb.py
+poetry run python -m data_generator.load_to_duckdb
 
 # Run the dbt pipeline
 cd dbt_project
-poetry run dbt run
-poetry run dbt test
+poetry run dbt build
 ```
+
+### Running with Airflow (recommended)
+
+For production-style orchestration with scheduling, retries, and observability:
+
+```bash
+# Build the custom Airflow image (first time only)
+cd airflow
+docker compose build
+
+# Start all Airflow services
+docker compose up -d
+
+# Access the UI at http://localhost:8080 (login: airflow / airflow)
+# Trigger the DAG manually or wait for the @monthly schedule
+
+# Stop Airflow when done
+docker compose down
+```
+
+The DAG `finclose_pipeline` runs the full pipeline in 5 sequential tasks:
+`generate_synthetic_data` → `load_to_duckdb` → `dbt_run` → `dbt_test` → `notify_success`.
+
+Each task has automatic retries (2 attempts, 2 min delay), a 15-minute execution timeout, and a failure callback that logs incidents to `logs/airflow_failures.log`.
+
+See [`docs/decisions/0005-orchestrate-pipeline-with-airflow.md`](./docs/decisions/0005-orchestrate-pipeline-with-airflow.md) for design rationale.
+
+### Running the dashboard
+
+```bash
+poetry run streamlit run dashboard/Summary.py
+```
+
+The dashboard has 5 pages: Summary, Variance Analysis, Journal Lines, P&L Statement, and AI Insights. The AI Insights page exposes the LangChain agent for free-form questions and structured variance explanations.
+
+---
 
 ## Project Structure
 finclose-ai/
+
 ├── data_generator/      # Python scripts: synthetic data + DuckDB loader
-├── dbt_project/         # dbt transformations
+
+├── dbt_project/         # dbt transformations (14 models, 92 tests)
+
 │   ├── models/
+
 │   │   ├── staging/     # 7 stg_* models (1:1 with source)
+
 │   │   ├── intermediate/# 2 int_* models (business logic)
+
 │   │   └── marts/       # 5 dim_* / fct_* models (consumption-ready)
+
 │   └── tests/           # 3 singular business rule tests
-├── airflow/             # Airflow DAGs and orchestration (upcoming)
-├── dashboard/           # Streamlit interactive dashboard (upcoming)
-├── ai_layer/            # LangChain-based AI analysis agents (upcoming)
+
+├── airflow/             # Airflow DAGs, Dockerfile, docker-compose
+
+├── dashboard/           # Streamlit dashboard (5 pages)
+
+├── ai_layer/            # LangChain SQL agent with FP&A-aware prompts
+
 ├── data/                # Local data files (gitignored)
+
 ├── docs/                # Architecture and design documentation
-│   └── decisions/       # ADRs (Architectural Decision Records)
-└── tests/               # Python unit and integration tests
+
+│   └── decisions/       # 5 ADRs (Architectural Decision Records)
+
+└── tests/               # 51 pytest unit tests for data_generator
 
 ## About
 
@@ -179,4 +224,3 @@ Built by **Carlos Leguizamon Guillaumet** as a portfolio project combining accou
 ## License
 
 MIT
-EOF

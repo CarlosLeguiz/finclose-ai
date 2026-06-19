@@ -19,7 +19,7 @@ Use DBeaver Community as the primary SQL client for DuckDB exploration. Install 
 ## Rationale
 
 - DBeaver is free, open-source, and cross-platform.
-- The same client will be used to connect to Snowflake during the final validation phase (week 16), so learning one tool covers multiple warehouses in the project.
+- The same client supports multiple warehouse backends (Snowflake, BigQuery, Postgres), making it a portable choice if the project migrates away from DuckDB in the future.
 - Graphical schema explorer accelerates debugging during dbt model development.
 - DuckDB CLI is faster for one-off queries but lacks visual table inspection, which slows down validation of joins and aggregations.
 - MotherDuck requires uploading data to the cloud, which contradicts the local-first development principle of this project.
@@ -27,7 +27,7 @@ Use DBeaver Community as the primary SQL client for DuckDB exploration. Install 
 ## Consequences
 
 **Positive:**
-- One tool covers DuckDB (dev) and Snowflake (validation).
+- One tool covers DuckDB today and other warehouses if the project migrates in the future.
 - Visual schema exploration speeds up dbt model debugging.
 - Free, no vendor lock-in.
 
