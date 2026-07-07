@@ -90,19 +90,6 @@ The transformation layer follows a 3-layer architecture: staging, intermediate, 
 
 ---
 
-## Project Roadmap
-
-- [x] Week 1: Environment setup and project scaffolding
-- [x] Week 2: Accounting data model design
-- [x] Weeks 3-4: Synthetic data generation with Python + Faker
-- [x] Weeks 5-7: dbt staging and intermediate models
-- [x] Weeks 8-9: dbt marts and data quality tests
-- [x] Weeks 10-11: Airflow orchestration and Streamlit dashboard
-- [x] Weeks 12-14: LangChain-based AI variance analysis agent
-- [x] Weeks 15-16: CI/CD with GitHub Actions and final documentation
-
----
-
 ## Getting Started
 
 ### Prerequisites
