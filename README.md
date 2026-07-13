@@ -153,8 +153,7 @@ finclose-ai/
 
 ## About
 
-Built by **Carlos Leguizamon Guillaumet** as a portfolio project combining accounting expertise (CPA background) with modern data engineering and AI.
-
+Built by **Carlos Leguizamon Guillaumet** 
 - Córdoba, Argentina
 - [LinkedIn](https://www.linkedin.com/in/carlos-leguizamon-guillaumet/)
 - carlosleguizamonguillaumet1998@gmail.com
